@@ -43,7 +43,7 @@ contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
 
     // redeemValue lets a token owner redeem the attached value by automatically
     // bridging the Ether funds to Optimism
-    function redeemValue(uint256 tokenId) public {
+    function redeemValue(uint256 tokenId, uint32 _l2Gas) public {
         require(_exists(tokenId), "Token does not exist");
         require(ownerOf(tokenId) == msg.sender, "Caller is not the token owner");
         
@@ -54,8 +54,7 @@ contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
         delete _tokenValues[tokenId];
 
         // Call the Optimism L1 bridge contract to bridge the Ether to Optimism
-        // TODO: figure out how to calculate _l2Gas
-        _bridgeContract.depositETHTo(msg.sender, "_l2Gas");
+        _bridgeContract.depositETHTo(msg.sender, _l2Gas);
     }
 
     function _exists(uint256 tokenId) private view returns (bool) {
