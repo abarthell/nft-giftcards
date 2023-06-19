@@ -2,6 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
@@ -11,7 +12,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 * the Ether will automatically be bridged to Optimism. The purpose of this is 
 * to abstract away manual bridging in a fun way and increase L2 adoption.
 */
-contract OptimismPass is ERC721, Ownable {
+contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
 
     // _tokenIdCounter is used to assign a unique ID to each token
@@ -29,10 +30,13 @@ contract OptimismPass is ERC721, Ownable {
     constructor() ERC721("OptimismPass", "OPP") {}
 
     // safeMint mints a token and attaches an Ether amount to it (in Wei)
-    function safeMint(address to, uint256 valueInWei) public onlyOwner {
+    function safeMint(address to, uint256 valueInWei, string memory uri) public onlyOwner {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
+
         _safeMint(to, tokenId);
+        _setTokenURI(tokenId, uri);
+
         _tokenValues[tokenId] = valueInWei;
         _tokenOwners[tokenId] = to;
     }
@@ -66,5 +70,29 @@ contract OptimismPass is ERC721, Ownable {
     function getTokenValue(uint256 tokenId) public view returns (uint256) {
         require(_exists(tokenId), "Token does not exist");
         return _tokenValues[tokenId];
+    }
+
+    // The following functions are overrides required by Solidity.
+
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
+        super._burn(tokenId);
+    }
+
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (string memory)
+    {
+        return super.tokenURI(tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 }
