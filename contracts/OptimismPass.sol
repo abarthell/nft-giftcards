@@ -18,7 +18,7 @@ contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
     // _tokenIdCounter is used to assign a unique ID to each token
     Counters.Counter private _tokenIdCounter;
 
-    // _tokenOwners is a mapping of tokeknId to address of owner
+    // _tokenOwners is a mapping of tokenId to address of owner
     mapping(uint256 => address) private _tokenOwners;
 
     // _tokenValues is a mapping from tokenId to tokenValue (in Wei)
@@ -29,7 +29,12 @@ contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
 
     constructor() ERC721("OptimismPass", "OPP") {}
 
-    // safeMint mints a token and attaches an Ether amount to it (in Wei)
+    /*
+    * @dev safeMint mints a token and attaches an Ether amount (in Wei) and uri to it.
+    * @param to is the address that the token will be minted to
+    * @param valueInWei is the Ether value that will be attached to this token
+    * @param uri is the reference to the image that is displayed on this token
+    */
     function safeMint(address to, uint256 valueInWei, string memory uri) public onlyOwner {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
@@ -41,9 +46,13 @@ contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
         _tokenOwners[tokenId] = to;
     }
 
-    // redeemValue lets a token owner redeem the attached value by automatically
-    // bridging the Ether funds to Optimism
-    function redeemValue(uint256 tokenId, uint32 _l2Gas) public {
+    /*
+    * @dev redeemValue lets a token owner redeem the attached value by automatically
+    * bridging the Ether funds to Optimism.
+    * @param tokenId is unique Id that refers to this token
+    * @param l2Gas is the gas limit required to complete the deposit on L2
+    */
+    function redeemValue(uint256 tokenId, uint32 l2Gas) public {
         require(_exists(tokenId), "Token does not exist");
         require(ownerOf(tokenId) == msg.sender, "Caller is not the token owner");
         
@@ -54,7 +63,7 @@ contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
         delete _tokenValues[tokenId];
 
         // Call the Optimism L1 bridge contract to bridge the Ether to Optimism
-        _bridgeContract.depositETHTo(msg.sender, _l2Gas);
+        _bridgeContract.depositETHTo(msg.sender, l2Gas);
     }
 
     function _exists(uint256 tokenId) private view returns (bool) {
