@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-import "./OptimismBridge.sol";
-
 /*
 * OptimismPass is an ERC721 contract that enables users to attach Ether
 * to the L1 NFT and send it to others as a gift card. When the funds are redeemed, 
