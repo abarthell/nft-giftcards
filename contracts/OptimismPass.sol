@@ -64,6 +64,7 @@ contract OptimismPass is ERC721, Ownable {
     }
 
     function getTokenValue(uint256 tokenId) public view returns (uint256) {
+        require(_exists(tokenId), "Token does not exist");
         return _tokenValues[tokenId];
     }
 }
