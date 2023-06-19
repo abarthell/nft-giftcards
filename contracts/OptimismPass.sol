@@ -15,58 +15,57 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
 
-    // _tokenIdCounter is used to assign a unique ID to each token
-    Counters.Counter private _tokenIdCounter;
+    // tokenIdCounter is used to assign a unique ID to each token
+    Counters.Counter private tokenIdCounter;
 
-    // _tokenOwners is a mapping of tokenId to address of owner
-    mapping(uint256 => address) private _tokenOwners;
+    // tokenValues is a mapping from tokenId to tokenValue (in Wei)
+    mapping(uint256 => uint256) private tokenValues;
 
-    // _tokenValues is a mapping from tokenId to tokenValue (in Wei)
-    mapping(uint256 => uint256) private _tokenValues;
-
-    // _bridgeContract represents the contract to bridge the Ether on L1 to Optimism on L2
-    address private _bridgeContract = "TODO";
+    // bridgeContract represents the contract to bridge the Ether on L1 to Optimism on L2
+    address private bridgeContract = "TODO";
 
     constructor() ERC721("OptimismPass", "OPP") {}
 
     /*
     * @dev safeMint mints a token and attaches an Ether amount (in Wei) and uri to it.
-    * @param uri is the reference to the image that is displayed on this token
+    *
+    * @param _uri is the reference to a JSON file that represents the associated metadata
     */
-    function safeMint(string memory uri) public payable {
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
+    function safeMint(string memory _uri) public payable {
+        require(msg.value > 0, "Token must have positive ether value attached");
+        uint256 tokenId = tokenIdCounter.current();
+        tokenIdCounter.increment();
 
         _safeMint(msg.sender, tokenId);
-        _setTokenURI(tokenId, uri);
+        _setTokenURI(tokenId, _uri);
 
-        _tokenValues[tokenId] = msg.value;
-        _tokenOwners[tokenId] = msg.sender;
+        tokenValues[tokenId] = msg.value;
     }
 
     /*
     * @dev redeemValue lets a token owner redeem the attached value by automatically
     * bridging the Ether funds to Optimism.
-    * @param tokenId is unique Id that refers to this token
-    * @param l2Gas is the gas limit required to complete the deposit on L2
+    *
+    * @param _tokenId is the unique Id that refers to this token
+    * @param _l2Gas is the gas limit required to complete the deposit on L2
     */
-    function redeemValue(uint256 tokenId, uint32 l2Gas) public {
-        require(_exists(tokenId), "Token does not exist");
-        require(ownerOf(tokenId) == msg.sender, "Caller is not the token owner");
+    function redeemValue(uint256 _tokenId, uint32 _l2Gas) public {
+        require(_exists(_tokenId), "Token does not exist");
+        require(ownerOf(_tokenId) == msg.sender, "Caller is not the token owner");
         
-        uint256 valueInWei = _tokenValues[tokenId];
+        uint256 valueInWei = tokenValues[_tokenId];
         require(valueInWei > 0, "Token does not have a value attached");
         require(address(this).balance >= valueInWei, "Insufficient balance");
 
         // Set tokenValue to 0
-        _tokenValues[tokenId] = 0;
+        tokenValues[_tokenId] = 0;
 
         // Call the Optimism L1 bridge contract so the token owner can redeem the funds on L2
-        (bool success,) = payable(_bridgeContract).call{value: valueInWei}(
+        (bool success,) = payable(bridgeContract).call{value: valueInWei}(
             abi.encodeWithSignature(
                 "depositETHTo(address,uint32,bytes)", 
                 msg.sender, 
-                l2Gas, 
+                _l2Gas, 
                 ""
             )
         );
@@ -74,18 +73,14 @@ contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
         require(success, "Failed to bridge funds to Optimism");
     }
 
-    function _exists(uint256 tokenId) private view returns (bool) {
-        return _tokenOwners[tokenId] != address(0);
-    }
-
-    function ownerOf(uint256 tokenId) public view returns (address) {
-        require(_exists(tokenId), "Token does not exist");
-        return _tokenOwners[tokenId];
-    }
-
-    function getTokenValue(uint256 tokenId) public view returns (uint256) {
-        require(_exists(tokenId), "Token does not exist");
-        return _tokenValues[tokenId];
+    /*
+    * @dev getTokenValue returns the ether amount in Wei that is attached to this token.
+    *
+    * @param _tokenId is the unique Id that refers to this token
+    */
+    function getTokenValue(uint256 _tokenId) public view returns (uint256) {
+        require(_exists(_tokenId), "Token does not exist");
+        return tokenValues[_tokenId];
     }
 
     // The following functions are overrides required by Solidity.
