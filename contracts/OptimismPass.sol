@@ -56,16 +56,22 @@ contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
         
         uint256 valueInWei = _tokenValues[tokenId];
         require(valueInWei > 0, "Token does not have a value attached");
-
-        // Delete the token value before bridging to prevent reentrancy attacks
-        delete _tokenValues[tokenId];
-
-        // Transfer the attached value to the bridge contract
         require(address(this).balance >= valueInWei, "Insufficient balance");
-        payable(_bridgeContract).transfer(valueInWei);
 
-        // Call the Optimism L1 bridge contract to bridge the Ether to Optimism
-        _bridgeContract.depositETHTo(payable(msg.sender), l2Gas, "");
+        // Set tokenValue to 0
+        _tokenValues[tokenId] = 0;
+
+        // Call the Optimism L1 bridge contract so the token owner can redeem the funds on L2
+        (bool success,) = payable(_bridgeContract).call{value: valueInWei}(
+            abi.encodeWithSignature(
+                "depositETHTo(address,uint32,bytes)", 
+                msg.sender, 
+                l2Gas, 
+                ""
+            )
+        );
+
+        require(success, "Failed to bridge funds to Optimism");
     }
 
     function _exists(uint256 tokenId) private view returns (bool) {
