@@ -31,19 +31,17 @@ contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
 
     /*
     * @dev safeMint mints a token and attaches an Ether amount (in Wei) and uri to it.
-    * @param to is the address that the token will be minted to
-    * @param valueInWei is the Ether value that will be attached to this token
     * @param uri is the reference to the image that is displayed on this token
     */
-    function safeMint(address to, uint256 valueInWei, string memory uri) public onlyOwner {
+    function safeMint(string memory uri) public payable {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
 
-        _safeMint(to, tokenId);
+        _safeMint(msg.sender, tokenId);
         _setTokenURI(tokenId, uri);
 
-        _tokenValues[tokenId] = valueInWei;
-        _tokenOwners[tokenId] = to;
+        _tokenValues[tokenId] = msg.value;
+        _tokenOwners[tokenId] = msg.sender;
     }
 
     /*
@@ -62,8 +60,12 @@ contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
         // Delete the token value before bridging to prevent reentrancy attacks
         delete _tokenValues[tokenId];
 
+        // Transfer the attached value to the bridge contract
+        require(address(this).balance >= valueInWei, "Insufficient balance");
+        payable(_bridgeContract).transfer(valueInWei);
+
         // Call the Optimism L1 bridge contract to bridge the Ether to Optimism
-        _bridgeContract.depositETHTo(msg.sender, l2Gas);
+        _bridgeContract.depositETHTo(payable(msg.sender), l2Gas, "");
     }
 
     function _exists(uint256 tokenId) private view returns (bool) {
