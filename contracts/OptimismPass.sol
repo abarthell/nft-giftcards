@@ -7,27 +7,28 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 /*
-* OptimismPass is an ERC721 contract that enables users to attach Ether
-* to the L1 NFT and send it to others as a gift card. When the funds are redeemed, 
-* the Ether will automatically be bridged to Optimism. The purpose of this is 
-* to abstract away manual bridging in a fun way and increase L2 adoption.
+* @title OptimismPass
+* @notice OptimismPass is an ERC721 contract that enables users to attach Ether
+*         to the L1 NFT and send it to others as a gift card. When the funds are redeemed, 
+*         the Ether will automatically be bridged to Optimism. The purpose of this is 
+*         to abstract away manual bridging in a fun way and increase L2 adoption.
 */
 contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
 
-    // tokenIdCounter is used to assign a unique ID to each token
+    // @notice tokenIdCounter is used to assign a unique ID to each token
     Counters.Counter private tokenIdCounter;
 
-    // tokenValues is a mapping from tokenId to tokenValue (in Wei)
+    // @notice tokenValues is a mapping from tokenId to tokenValue (in Wei)
     mapping(uint256 => uint256) private tokenValues;
 
-    // bridgeContract represents the contract to bridge the Ether on L1 to Optimism on L2
+    // @notice bridgeContract represents the contract to bridge the Ether on L1 to Optimism on L2
     address private bridgeContract = "TODO";
 
     constructor() ERC721("OptimismPass", "OPP") {}
 
     /*
-    * @dev safeMint mints a token and attaches an Ether amount (in Wei) and uri to it.
+    * @notice safeMint mints a token and attaches an Ether amount (in Wei) and uri to it.
     *
     * @param _uri is the reference to a JSON file that represents the associated metadata
     */
@@ -43,7 +44,7 @@ contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
     }
 
     /*
-    * @dev redeemValue lets a token owner redeem the attached value by automatically
+    * @notice redeemValue lets a token owner redeem the attached value by automatically
     * bridging the Ether funds to Optimism.
     *
     * @param _tokenId is the unique Id that refers to this token
@@ -57,10 +58,10 @@ contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
         require(valueInWei > 0, "Token does not have a value attached");
         require(address(this).balance >= valueInWei, "Insufficient balance");
 
-        // Set tokenValue to 0
+        // @notice Clear the token's associated balance
         tokenValues[_tokenId] = 0;
 
-        // Call the Optimism L1 bridge contract so the token owner can redeem the funds on L2
+        // @notice Call the Optimism L1 bridge contract so the token owner can redeem the funds on L2
         (bool success,) = payable(bridgeContract).call{value: valueInWei}(
             abi.encodeWithSignature(
                 "depositETHTo(address,uint32,bytes)", 
@@ -74,7 +75,7 @@ contract OptimismPass is ERC721, ERC721URIStorage, Ownable {
     }
 
     /*
-    * @dev getTokenValue returns the ether amount in Wei that is attached to this token.
+    * @notice getTokenValue returns the ether amount in Wei that is attached to this token.
     *
     * @param _tokenId is the unique Id that refers to this token
     */
